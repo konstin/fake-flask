@@ -26,7 +26,7 @@ Install and update using `pip`_:
 
     $ pip install -U Flask
 
-.. _pip: https://pip.pypa.io/en/stable/quickstart/
+.. _pip: https://pip.pypa.io/en/stable/getting-started/
 
 
 A Simple Example
@@ -55,7 +55,7 @@ Contributing
 For guidance on setting up a development environment and how to make a
 contribution to Flask, see the `contributing guidelines`_.
 
-.. _contributing guidelines: https://github.com/pallets/flask/blob/master/CONTRIBUTING.rst
+.. _contributing guidelines: https://github.com/pallets/flask/blob/main/CONTRIBUTING.rst
 
 
 Donate
@@ -77,6 +77,4 @@ Links
 -   PyPI Releases: https://pypi.org/project/Flask/
 -   Source Code: https://github.com/pallets/flask/
 -   Issue Tracker: https://github.com/pallets/flask/issues/
--   Website: https://palletsprojects.com/p/flask/
--   Twitter: https://twitter.com/PalletsTeam
 -   Chat: https://discord.gg/pallets

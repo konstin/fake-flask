@@ -8,7 +8,7 @@ a request, CLI command, or other activity. Rather than passing the
 application around to each function, the :data:`current_app` and
 :data:`g` proxies are accessed instead.
 
-This is similar to the :doc:`/reqcontext`, which keeps track of
+This is similar to :doc:`/reqcontext`, which keeps track of
 request-level data during a request. A corresponding application context
 is pushed when a request context is pushed.
 
@@ -136,22 +136,12 @@ local from ``get_db()``::
 Accessing ``db`` will call ``get_db`` internally, in the same way that
 :data:`current_app` works.
 
-----
-
-If you're writing an extension, :data:`g` should be reserved for user
-code. You may store internal data on the context itself, but be sure to
-use a sufficiently unique name. The current context is accessed with
-:data:`_app_ctx_stack.top <_app_ctx_stack>`. For more information see
-:doc:`/extensiondev`.
-
 
 Events and Signals
 ------------------
 
-The application will call functions registered with
-:meth:`~Flask.teardown_appcontext` when the application context is
-popped.
+The application will call functions registered with :meth:`~Flask.teardown_appcontext`
+when the application context is popped.
 
-If :data:`~signals.signals_available` is true, the following signals are
-sent: :data:`appcontext_pushed`, :data:`appcontext_tearing_down`, and
-:data:`appcontext_popped`.
+The following signals are sent: :data:`appcontext_pushed`,
+:data:`appcontext_tearing_down`, and :data:`appcontext_popped`.
