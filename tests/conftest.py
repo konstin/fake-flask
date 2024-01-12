@@ -1,15 +1,26 @@
+# -*- coding: utf-8 -*-
+"""
+    tests.conftest
+    ~~~~~~~~~~~~~~
+
+    :copyright: 2010 Pallets
+    :license: BSD-3-Clause
+"""
+
+import gc
 import os
 import pkgutil
 import sys
+import textwrap
 
 import pytest
 from _pytest import monkeypatch
 
-from flask import Flask
-from flask.globals import request_ctx
+import flask
+from flask import Flask as _Flask
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope='session', autouse=True)
 def _standard_os_environ():
     """Set up ``os.environ`` at the start of the test session to have
     standard values. Returns a list of operations that is used by
@@ -17,11 +28,11 @@ def _standard_os_environ():
     """
     mp = monkeypatch.MonkeyPatch()
     out = (
-        (os.environ, "FLASK_ENV_FILE", monkeypatch.notset),
-        (os.environ, "FLASK_APP", monkeypatch.notset),
-        (os.environ, "FLASK_DEBUG", monkeypatch.notset),
-        (os.environ, "FLASK_RUN_FROM_CLI", monkeypatch.notset),
-        (os.environ, "WERKZEUG_RUN_MAIN", monkeypatch.notset),
+        (os.environ, 'FLASK_APP', monkeypatch.notset),
+        (os.environ, 'FLASK_ENV', monkeypatch.notset),
+        (os.environ, 'FLASK_DEBUG', monkeypatch.notset),
+        (os.environ, 'FLASK_RUN_FROM_CLI', monkeypatch.notset),
+        (os.environ, 'WERKZEUG_RUN_MAIN', monkeypatch.notset),
     )
 
     for _, key, value in out:
@@ -42,13 +53,14 @@ def _reset_os_environ(monkeypatch, _standard_os_environ):
     monkeypatch._setitem.extend(_standard_os_environ)
 
 
+class Flask(_Flask):
+    testing = True
+    secret_key = 'test key'
+
+
 @pytest.fixture
 def app():
-    app = Flask("flask_test", root_path=os.path.dirname(__file__))
-    app.config.update(
-        TESTING=True,
-        SECRET_KEY="test key",
-    )
+    app = Flask('flask_test', root_path=os.path.dirname(__file__))
     return app
 
 
@@ -71,15 +83,10 @@ def client(app):
 
 @pytest.fixture
 def test_apps(monkeypatch):
-    monkeypatch.syspath_prepend(os.path.join(os.path.dirname(__file__), "test_apps"))
-    original_modules = set(sys.modules.keys())
-
-    yield
-
-    # Remove any imports cached during the test. Otherwise "import app"
-    # will work in the next test even though it's no longer on the path.
-    for key in sys.modules.keys() - original_modules:
-        sys.modules.pop(key)
+    monkeypatch.syspath_prepend(
+        os.path.abspath(os.path.join(
+            os.path.dirname(__file__), 'test_apps'))
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -89,10 +96,8 @@ def leak_detector():
     # make sure we're not leaking a request context since we are
     # testing flask internally in debug mode in a few cases
     leaks = []
-    while request_ctx:
-        leaks.append(request_ctx._get_current_object())
-        request_ctx.pop()
-
+    while flask._request_ctx_stack.top is not None:
+        leaks.append(flask._request_ctx_stack.pop())
     assert leaks == []
 
 
@@ -110,13 +115,14 @@ def limit_loader(request, monkeypatch):
     if not request.param:
         return
 
-    class LimitedLoader:
+    class LimitedLoader(object):
         def __init__(self, loader):
             self.loader = loader
 
         def __getattr__(self, name):
-            if name in {"archive", "get_filename"}:
-                raise AttributeError(f"Mocking a loader which does not have {name!r}.")
+            if name in ('archive', 'get_filename'):
+                msg = 'Mocking a loader which does not have `%s.`' % name
+                raise AttributeError(msg)
             return getattr(self.loader, name)
 
     old_get_loader = pkgutil.get_loader
@@ -124,32 +130,64 @@ def limit_loader(request, monkeypatch):
     def get_loader(*args, **kwargs):
         return LimitedLoader(old_get_loader(*args, **kwargs))
 
-    monkeypatch.setattr(pkgutil, "get_loader", get_loader)
+    monkeypatch.setattr(pkgutil, 'get_loader', get_loader)
 
 
 @pytest.fixture
-def modules_tmp_path(tmp_path, monkeypatch):
-    """A temporary directory added to sys.path."""
-    rv = tmp_path / "modules_tmp"
-    rv.mkdir()
-    monkeypatch.syspath_prepend(os.fspath(rv))
+def modules_tmpdir(tmpdir, monkeypatch):
+    """A tmpdir added to sys.path."""
+    rv = tmpdir.mkdir('modules_tmpdir')
+    monkeypatch.syspath_prepend(str(rv))
     return rv
 
 
 @pytest.fixture
-def modules_tmp_path_prefix(modules_tmp_path, monkeypatch):
-    monkeypatch.setattr(sys, "prefix", os.fspath(modules_tmp_path))
-    return modules_tmp_path
+def modules_tmpdir_prefix(modules_tmpdir, monkeypatch):
+    monkeypatch.setattr(sys, 'prefix', str(modules_tmpdir))
+    return modules_tmpdir
 
 
 @pytest.fixture
-def site_packages(modules_tmp_path, monkeypatch):
+def site_packages(modules_tmpdir, monkeypatch):
     """Create a fake site-packages."""
-    py_dir = f"python{sys.version_info.major}.{sys.version_info.minor}"
-    rv = modules_tmp_path / "lib" / py_dir / "site-packages"
-    rv.mkdir(parents=True)
-    monkeypatch.syspath_prepend(os.fspath(rv))
+    rv = modules_tmpdir \
+        .mkdir('lib') \
+        .mkdir('python{x[0]}.{x[1]}'.format(x=sys.version_info)) \
+        .mkdir('site-packages')
+    monkeypatch.syspath_prepend(str(rv))
     return rv
+
+
+@pytest.fixture
+def install_egg(modules_tmpdir, monkeypatch):
+    """Generate egg from package name inside base and put the egg into
+    sys.path."""
+
+    def inner(name, base=modules_tmpdir):
+        if not isinstance(name, str):
+            raise ValueError(name)
+        base.join(name).ensure_dir()
+        base.join(name).join('__init__.py').ensure()
+
+        egg_setup = base.join('setup.py')
+        egg_setup.write(textwrap.dedent("""
+        from setuptools import setup
+        setup(name='{0}',
+              version='1.0',
+              packages=['site_egg'],
+              zip_safe=True)
+        """.format(name)))
+
+        import subprocess
+        subprocess.check_call(
+            [sys.executable, 'setup.py', 'bdist_egg'],
+            cwd=str(modules_tmpdir)
+        )
+        egg_path, = modules_tmpdir.join('dist/').listdir()
+        monkeypatch.syspath_prepend(str(egg_path))
+        return egg_path
+
+    return inner
 
 
 @pytest.fixture

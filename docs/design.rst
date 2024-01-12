@@ -1,3 +1,5 @@
+.. _design:
+
 Design Decisions in Flask
 =========================
 
@@ -75,7 +77,7 @@ to the application object :meth:`~flask.Flask.wsgi_app`).
 
 Furthermore this design makes it possible to use a factory function to
 create the application which is very helpful for unit testing and similar
-things (:doc:`/patterns/appfactories`).
+things (:ref:`app-factories`).
 
 The Routing System
 ------------------
@@ -107,14 +109,14 @@ has a certain understanding about how things work.  On the surface they
 all work the same: you tell the engine to evaluate a template with a set
 of variables and take the return value as string.
 
-But that's about where similarities end. Jinja2 for example has an
-extensive filter system, a certain way to do template inheritance,
-support for reusable blocks (macros) that can be used from inside
-templates and also from Python code, supports iterative template
-rendering, configurable syntax and more. On the other hand an engine
-like Genshi is based on XML stream evaluation, template inheritance by
-taking the availability of XPath into account and more. Mako on the
-other hand treats templates similar to Python modules.
+But that's about where similarities end.  Jinja2 for example has an
+extensive filter system, a certain way to do template inheritance, support
+for reusable blocks (macros) that can be used from inside templates and
+also from Python code, uses Unicode for all operations, supports
+iterative template rendering, configurable syntax and more.  On the other
+hand an engine like Genshi is based on XML stream evaluation, template
+inheritance by taking the availability of XPath into account and more.
+Mako on the other hand treats templates similar to Python modules.
 
 When it comes to connecting a template engine with an application or
 framework there is more than just rendering templates.  For instance,
@@ -130,24 +132,8 @@ being present.  You can easily use your own templating language, but an
 extension could still depend on Jinja itself.
 
 
-What does "micro" mean?
+Micro with Dependencies
 -----------------------
-
-“Micro” does not mean that your whole web application has to fit into a single
-Python file (although it certainly can), nor does it mean that Flask is lacking
-in functionality. The "micro" in microframework means Flask aims to keep the
-core simple but extensible. Flask won't make many decisions for you, such as
-what database to use. Those decisions that it does make, such as what
-templating engine to use, are easy to change.  Everything else is up to you, so
-that Flask can be everything you need and nothing you don't.
-
-By default, Flask does not include a database abstraction layer, form
-validation or anything else where different libraries already exist that can
-handle that. Instead, Flask supports extensions to add such functionality to
-your application as if it was implemented in Flask itself. Numerous extensions
-provide database integration, form validation, upload handling, various open
-authentication technologies, and more. Flask may be "micro", but it's ready for
-production use on a variety of needs.
 
 Why does Flask call itself a microframework and yet it depends on two
 libraries (namely Werkzeug and Jinja2).  Why shouldn't it?  If we look
@@ -183,24 +169,8 @@ large applications harder to maintain.  However Flask is just not designed
 for large applications or asynchronous servers.  Flask wants to make it
 quick and easy to write a traditional web application.
 
-
-Async/await and ASGI support
-----------------------------
-
-Flask supports ``async`` coroutines for view functions by executing the
-coroutine on a separate thread instead of using an event loop on the
-main thread as an async-first (ASGI) framework would. This is necessary
-for Flask to remain backwards compatible with extensions and code built
-before ``async`` was introduced into Python. This compromise introduces
-a performance cost compared with the ASGI frameworks, due to the
-overhead of the threads.
-
-Due to how tied to WSGI Flask's code is, it's not clear if it's possible
-to make the ``Flask`` class support ASGI and WSGI at the same time. Work
-is currently being done in Werkzeug to work with ASGI, which may
-eventually enable support in Flask as well.
-
-See :doc:`/async-await` for more discussion.
+Also see the :ref:`becomingbig` section of the documentation for some
+inspiration for larger applications based on Flask.
 
 
 What Flask is, What Flask is Not
@@ -216,13 +186,6 @@ Why is this the case?  Because people have different preferences and
 requirements and Flask could not meet those if it would force any of this
 into the core.  The majority of web applications will need a template
 engine in some sort.  However not every application needs a SQL database.
-
-As your codebase grows, you are free to make the design decisions appropriate
-for your project.  Flask will continue to provide a very simple glue layer to
-the best that Python has to offer.  You can implement advanced patterns in
-SQLAlchemy or another database tool, introduce non-relational data persistence
-as appropriate, and take advantage of framework-agnostic tools built for WSGI,
-the Python web interface.
 
 The idea of Flask is to build a good foundation for all applications.
 Everything else is up to you or extensions.

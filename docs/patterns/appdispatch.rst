@@ -1,3 +1,5 @@
+.. _app-dispatch:
+
 Application Dispatching
 =======================
 
@@ -8,29 +10,43 @@ Django and a Flask application in the same interpreter side by side if
 you want.  The usefulness of this depends on how the applications work
 internally.
 
-The fundamental difference from :doc:`packages` is that in this case you
-are running the same or different Flask applications that are entirely
-isolated from each other. They run different configurations and are
-dispatched on the WSGI level.
+The fundamental difference from the :ref:`module approach
+<larger-applications>` is that in this case you are running the same or
+different Flask applications that are entirely isolated from each other.
+They run different configurations and are dispatched on the WSGI level.
 
 
 Working with this Document
 --------------------------
 
-Each of the techniques and examples below results in an ``application``
-object that can be run with any WSGI server. For development, use the
-``flask run`` command to start a development server. For production, see
-:doc:`/deploying/index`.
+Each of the techniques and examples below results in an ``application`` object
+that can be run with any WSGI server.  For production, see :ref:`deployment`.
+For development, Werkzeug provides a builtin server for development available
+at :func:`werkzeug.serving.run_simple`::
 
-.. code-block:: python
+    from werkzeug.serving import run_simple
+    run_simple('localhost', 5000, application, use_reloader=True)
+
+Note that :func:`run_simple <werkzeug.serving.run_simple>` is not intended for
+use in production.  Use a :ref:`full-blown WSGI server <deployment>`.
+
+In order to use the interactive debugger, debugging must be enabled both on
+the application and the simple server. Here is the "hello world" example with
+debugging and :func:`run_simple <werkzeug.serving.run_simple>`::
 
     from flask import Flask
+    from werkzeug.serving import run_simple
 
     app = Flask(__name__)
+    app.debug = True
 
     @app.route('/')
     def hello_world():
         return 'Hello World!'
+
+    if __name__ == '__main__':
+        run_simple('localhost', 5000, app,
+                   use_reloader=True, use_debugger=True, use_evalex=True)
 
 
 Combining Applications
@@ -44,9 +60,7 @@ are combined by the dispatcher middleware into a larger one that is
 dispatched based on prefix.
 
 For example you could have your main application run on ``/`` and your
-backend interface on ``/backend``.
-
-.. code-block:: python
+backend interface on ``/backend``::
 
     from werkzeug.middleware.dispatcher import DispatcherMiddleware
     from frontend_app import application as frontend
@@ -65,7 +79,7 @@ with different configurations.  Assuming the application is created inside
 a function and you can call that function to instantiate it, that is
 really easy to implement.  In order to develop your application to support
 creating new instances in functions have a look at the
-:doc:`appfactories` pattern.
+:ref:`app-factories` pattern.
 
 A very common example would be creating applications per subdomain.  For
 instance you configure your webserver to dispatch all requests for all
@@ -77,13 +91,11 @@ the dynamic application creation.
 The perfect level for abstraction in that regard is the WSGI layer.  You
 write your own WSGI application that looks at the request that comes and
 delegates it to your Flask application.  If that application does not
-exist yet, it is dynamically created and remembered.
-
-.. code-block:: python
+exist yet, it is dynamically created and remembered::
 
     from threading import Lock
 
-    class SubdomainDispatcher:
+    class SubdomainDispatcher(object):
 
         def __init__(self, domain, create_app):
             self.domain = domain
@@ -107,9 +119,7 @@ exist yet, it is dynamically created and remembered.
             return app(environ, start_response)
 
 
-This dispatcher can then be used like this:
-
-.. code-block:: python
+This dispatcher can then be used like this::
 
     from myapplication import create_app, get_user_for_subdomain
     from werkzeug.exceptions import NotFound
@@ -135,14 +145,12 @@ Dispatch by Path
 
 Dispatching by a path on the URL is very similar.  Instead of looking at
 the ``Host`` header to figure out the subdomain one simply looks at the
-request path up to the first slash.
-
-.. code-block:: python
+request path up to the first slash::
 
     from threading import Lock
-    from wsgiref.util import shift_path_info
+    from werkzeug.wsgi import pop_path_info, peek_path_info
 
-    class PathDispatcher:
+    class PathDispatcher(object):
 
         def __init__(self, default_app, create_app):
             self.default_app = default_app
@@ -160,24 +168,15 @@ request path up to the first slash.
                 return app
 
         def __call__(self, environ, start_response):
-            app = self.get_application(_peek_path_info(environ))
+            app = self.get_application(peek_path_info(environ))
             if app is not None:
-                shift_path_info(environ)
+                pop_path_info(environ)
             else:
                 app = self.default_app
             return app(environ, start_response)
 
-    def _peek_path_info(environ):
-        segments = environ.get("PATH_INFO", "").lstrip("/").split("/", 1)
-        if segments:
-            return segments[0]
-
-        return None
-
 The big difference between this and the subdomain one is that this one
-falls back to another application if the creator function returns ``None``.
-
-.. code-block:: python
+falls back to another application if the creator function returns ``None``::
 
     from myapplication import create_app, default_app, get_user_for_prefix
 

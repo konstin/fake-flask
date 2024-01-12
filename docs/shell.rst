@@ -1,3 +1,5 @@
+.. _shell:
+
 Working with the Shell
 ======================
 
@@ -21,7 +23,8 @@ that these functions are not only there for interactive shell usage, but
 also for unit testing and other situations that require a faked request
 context.
 
-Generally it's recommended that you read :doc:`reqcontext` first.
+Generally it's recommended that you read the :ref:`request-context`
+chapter of the documentation first.
 
 Command Line Interface
 ----------------------
@@ -31,7 +34,7 @@ Starting with Flask 0.11 the recommended way to work with the shell is the
 For instance the shell is automatically initialized with a loaded
 application context.
 
-For more information see :doc:`/cli`.
+For more information see :ref:`cli`.
 
 Creating a Request Context
 --------------------------

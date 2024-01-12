@@ -1,10 +1,12 @@
+.. _sqlalchemy-pattern:
+
 SQLAlchemy in Flask
 ===================
 
 Many people prefer `SQLAlchemy`_ for database access.  In this case it's
 encouraged to use a package instead of a module for your flask application
-and drop the models into a separate module (:doc:`packages`). While that
-is not necessary, it makes a lot of sense.
+and drop the models into a separate module (:ref:`larger-applications`).
+While that is not necessary, it makes a lot of sense.
 
 There are four very common ways to use SQLAlchemy.  I will outline each
 of them here:
@@ -34,9 +36,10 @@ official documentation on the `declarative`_ extension.
 Here's the example :file:`database.py` module for your application::
 
     from sqlalchemy import create_engine
-    from sqlalchemy.orm import scoped_session, sessionmaker, declarative_base
+    from sqlalchemy.orm import scoped_session, sessionmaker
+    from sqlalchemy.ext.declarative import declarative_base
 
-    engine = create_engine('sqlite:////tmp/test.db')
+    engine = create_engine('sqlite:////tmp/test.db', convert_unicode=True)
     db_session = scoped_session(sessionmaker(autocommit=False,
                                              autoflush=False,
                                              bind=engine))
@@ -83,7 +86,7 @@ Here is an example model (put this into :file:`models.py`, e.g.)::
             self.email = email
 
         def __repr__(self):
-            return f'<User {self.name!r}>'
+            return '<User %r>' % (self.name)
 
 To create the database you can use the `init_db` function:
 
@@ -101,12 +104,13 @@ You can insert entries into the database like this:
 Querying is simple as well:
 
 >>> User.query.all()
-[<User 'admin'>]
+[<User u'admin'>]
 >>> User.query.filter(User.name == 'admin').first()
-<User 'admin'>
+<User u'admin'>
 
 .. _SQLAlchemy: https://www.sqlalchemy.org/
-.. _declarative: https://docs.sqlalchemy.org/en/latest/orm/extensions/declarative/
+.. _declarative:
+   https://docs.sqlalchemy.org/en/latest/orm/extensions/declarative/
 
 Manual Object Relational Mapping
 --------------------------------
@@ -123,7 +127,7 @@ Here is an example :file:`database.py` module for your application::
     from sqlalchemy import create_engine, MetaData
     from sqlalchemy.orm import scoped_session, sessionmaker
 
-    engine = create_engine('sqlite:////tmp/test.db')
+    engine = create_engine('sqlite:////tmp/test.db', convert_unicode=True)
     metadata = MetaData()
     db_session = scoped_session(sessionmaker(autocommit=False,
                                              autoflush=False,
@@ -155,7 +159,7 @@ Here is an example table and model (put this into :file:`models.py`)::
             self.email = email
 
         def __repr__(self):
-            return f'<User {self.name!r}>'
+            return '<User %r>' % (self.name)
 
     users = Table('users', metadata,
         Column('id', Integer, primary_key=True),
@@ -175,7 +179,7 @@ you basically only need the engine::
 
     from sqlalchemy import create_engine, MetaData, Table
 
-    engine = create_engine('sqlite:////tmp/test.db')
+    engine = create_engine('sqlite:////tmp/test.db', convert_unicode=True)
     metadata = MetaData(bind=engine)
 
 Then you can either declare the tables in your code like in the examples
@@ -196,19 +200,19 @@ SQLAlchemy will automatically commit for us.
 To query your database, you use the engine directly or use a connection:
 
 >>> users.select(users.c.id == 1).execute().first()
-(1, 'admin', 'admin@localhost')
+(1, u'admin', u'admin@localhost')
 
 These results are also dict-like tuples:
 
 >>> r = users.select(users.c.id == 1).execute().first()
 >>> r['name']
-'admin'
+u'admin'
 
 You can also pass strings of SQL statements to the
 :meth:`~sqlalchemy.engine.base.Connection.execute` method:
 
 >>> engine.execute('select * from users where id = :1', [1]).first()
-(1, 'admin', 'admin@localhost')
+(1, u'admin', u'admin@localhost')
 
 For more information about SQLAlchemy, head over to the
 `website <https://www.sqlalchemy.org/>`_.

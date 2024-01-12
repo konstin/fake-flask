@@ -52,4 +52,4 @@ Example usage::
         files = request.files
         # At this point the hash is fully constructed.
         checksum = hash.hexdigest()
-        return f"Hash was: {checksum}"
+        return 'Hash was: %s' % checksum

@@ -1,3 +1,5 @@
+.. _caching-pattern:
+
 Caching
 =======
 
@@ -9,7 +11,7 @@ you actually put the result of that calculation into a cache for some
 time.
 
 Flask itself does not provide caching for you, but `Flask-Caching`_, an
-extension for Flask does. Flask-Caching supports various backends, and it is
+extentions for Flask does. Flask-Caching supports various backends, and it is
 even possible to develop your own caching backend.
 
 

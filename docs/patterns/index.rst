@@ -1,3 +1,5 @@
+.. _patterns:
+
 Patterns for Flask
 ==================
 
@@ -18,7 +20,10 @@ collected in the following pages.
    packages
    appfactories
    appdispatch
+   apierrors
    urlprocessors
+   distribute
+   fabric
    sqlite3
    sqlalchemy
    fileuploads
@@ -27,7 +32,8 @@ collected in the following pages.
    wtforms
    templateinheritance
    flashing
-   javascript
+   jquery
+   errorpages
    lazyloading
    mongoengine
    favicon
@@ -37,4 +43,3 @@ collected in the following pages.
    requestchecksum
    celery
    subclassing
-   singlepageapplications

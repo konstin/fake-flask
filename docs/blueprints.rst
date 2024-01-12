@@ -1,3 +1,5 @@
+.. _blueprints:
+
 Modular Applications with Blueprints
 ====================================
 
@@ -35,9 +37,8 @@ Blueprints in Flask are intended for these cases:
 A blueprint in Flask is not a pluggable app because it is not actually an
 application -- it's a set of operations which can be registered on an
 application, even multiple times.  Why not have multiple application
-objects?  You can do that (see :doc:`/patterns/appdispatch`), but your
-applications will have separate configs and will be managed at the WSGI
-layer.
+objects?  You can do that (see :ref:`app-dispatch`), but your applications
+will have separate configs and will be managed at the WSGI layer.
 
 Blueprints instead provide separation at the Flask level, share
 application config, and can change an application object as necessary with
@@ -69,7 +70,7 @@ implement a blueprint that does simple rendering of static templates::
     @simple_page.route('/<page>')
     def show(page):
         try:
-            return render_template(f'pages/{page}.html')
+            return render_template('pages/%s.html' % page)
         except TemplateNotFound:
             abort(404)
 
@@ -95,10 +96,9 @@ So how do you register that blueprint?  Like this::
 If you check the rules registered on the application, you will find
 these::
 
-    >>> app.url_map
-    Map([<Rule '/static/<filename>' (HEAD, OPTIONS, GET) -> static>,
+    [<Rule '/static/<filename>' (HEAD, OPTIONS, GET) -> static>,
      <Rule '/<page>' (HEAD, OPTIONS, GET) -> simple_page.show>,
-     <Rule '/' (HEAD, OPTIONS, GET) -> simple_page.show>])
+     <Rule '/' (HEAD, OPTIONS, GET) -> simple_page.show>]
 
 The first one is obviously from the application itself for the static
 files.  The other two are for the `show` function of the ``simple_page``
@@ -111,52 +111,13 @@ Blueprints however can also be mounted at different locations::
 
 And sure enough, these are the generated rules::
 
-    >>> app.url_map
-    Map([<Rule '/static/<filename>' (HEAD, OPTIONS, GET) -> static>,
+    [<Rule '/static/<filename>' (HEAD, OPTIONS, GET) -> static>,
      <Rule '/pages/<page>' (HEAD, OPTIONS, GET) -> simple_page.show>,
-     <Rule '/pages/' (HEAD, OPTIONS, GET) -> simple_page.show>])
+     <Rule '/pages/' (HEAD, OPTIONS, GET) -> simple_page.show>]
 
 On top of that you can register blueprints multiple times though not every
 blueprint might respond properly to that.  In fact it depends on how the
 blueprint is implemented if it can be mounted more than once.
-
-Nesting Blueprints
-------------------
-
-It is possible to register a blueprint on another blueprint.
-
-.. code-block:: python
-
-    parent = Blueprint('parent', __name__, url_prefix='/parent')
-    child = Blueprint('child', __name__, url_prefix='/child')
-    parent.register_blueprint(child)
-    app.register_blueprint(parent)
-
-The child blueprint will gain the parent's name as a prefix to its
-name, and child URLs will be prefixed with the parent's URL prefix.
-
-.. code-block:: python
-
-    url_for('parent.child.create')
-    /parent/child/create
-
-In addition a child blueprint's will gain their parent's subdomain,
-with their subdomain as prefix if present i.e.
-
-.. code-block:: python
-
-    parent = Blueprint('parent', __name__, subdomain='parent')
-    child = Blueprint('child', __name__, subdomain='child')
-    parent.register_blueprint(child)
-    app.register_blueprint(parent)
-
-    url_for('parent.child.create', _external=True)
-    "child.parent.domain.tld"
-
-Blueprint-specific before request functions, etc. registered with the
-parent will trigger for the child. If a child does not have an error
-handler that can handle a given exception, the parent's will be tried.
-
 
 Blueprint Resources
 -------------------
@@ -280,9 +241,8 @@ you can use relative redirects by prefixing the endpoint with a dot only::
 This will link to ``admin.index`` for instance in case the current request
 was dispatched to any other admin blueprint endpoint.
 
-
-Blueprint Error Handlers
-------------------------
+Error Handlers
+--------------
 
 Blueprints support the ``errorhandler`` decorator just like the :class:`Flask`
 application object, so it is easy to make Blueprint-specific custom error
@@ -308,8 +268,8 @@ at the application level using the ``request`` proxy object::
     @app.errorhandler(405)
     def _handle_api_error(ex):
         if request.path.startswith('/api/'):
-            return jsonify(error=str(ex)), ex.code
+            return jsonify_error(ex)
         else:
             return ex
 
-See :doc:`/errorhandling`.
+More information on error handling see :ref:`errorpages`.

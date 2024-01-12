@@ -30,7 +30,7 @@ directory should be treated as a package.
 
 .. code-block:: none
 
-    $ mkdir flaskr
+    mkdir flaskr
 
 .. code-block:: python
     :caption: ``flaskr/__init__.py``
@@ -127,36 +127,52 @@ Run The Application
 
 Now you can run your application using the ``flask`` command. From the
 terminal, tell Flask where to find your application, then run it in
-debug mode. Remember, you should still be in the top-level
+development mode. Remember, you should still be in the top-level
 ``flask-tutorial`` directory, not the ``flaskr`` package.
 
-Debug mode shows an interactive debugger whenever a page raises an
+Development mode shows an interactive debugger whenever a page raises an
 exception, and restarts the server whenever you make changes to the
 code. You can leave it running and just reload the browser page as you
 follow the tutorial.
 
-.. code-block:: text
+For Linux and Mac:
 
-    $ flask --app flaskr run --debug
+.. code-block:: none
+
+    export FLASK_APP=flaskr
+    export FLASK_ENV=development
+    flask run
+
+For Windows cmd, use ``set`` instead of ``export``:
+
+.. code-block:: none
+
+    set FLASK_APP=flaskr
+    set FLASK_ENV=development
+    flask run
+
+For Windows PowerShell, use ``$env:`` instead of ``export``:
+
+.. code-block:: none
+
+    $env:FLASK_APP = "flaskr"
+    $env:FLASK_ENV = "development"
+    flask run
 
 You'll see output similar to this:
 
-.. code-block:: text
+.. code-block:: none
 
      * Serving Flask app "flaskr"
+     * Environment: development
      * Debug mode: on
      * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
      * Restarting with stat
      * Debugger is active!
-     * Debugger PIN: nnn-nnn-nnn
+     * Debugger PIN: 855-212-761
 
 Visit http://127.0.0.1:5000/hello in a browser and you should see the
 "Hello, World!" message. Congratulations, you're now running your Flask
 web application!
-
-If another program is already using port 5000, you'll see
-``OSError: [Errno 98]`` or ``OSError: [WinError 10013]`` when the
-server tries to start. See :ref:`address-already-in-use` for how to
-handle that.
 
 Continue to :doc:`database`.
